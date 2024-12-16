@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">aula</a> &gt; <a href="index.source.html" class="el_package">com.devsuperior.dscommerce.services</a> &gt; <span class="el_source">OrderService.java</span></div><h1>OrderService.java</h1><pre class="source lang-java linenums">package com.devsuperior.dscommerce.services;
+
+import java.time.Instant;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.devsuperior.dscommerce.dto.OrderDTO;
+import com.devsuperior.dscommerce.dto.OrderItemDTO;
+import com.devsuperior.dscommerce.entities.Order;
+import com.devsuperior.dscommerce.entities.OrderItem;
+import com.devsuperior.dscommerce.entities.OrderStatus;
+import com.devsuperior.dscommerce.entities.Product;
+import com.devsuperior.dscommerce.entities.User;
+import com.devsuperior.dscommerce.repositories.OrderItemRepository;
+import com.devsuperior.dscommerce.repositories.OrderRepository;
+import com.devsuperior.dscommerce.repositories.ProductRepository;
+import com.devsuperior.dscommerce.services.exceptions.ResourceNotFoundException;
+
+@Service
+<span class="fc" id="L22">public class OrderService {</span>
+
+    @Autowired
+    private OrderRepository repository;
+    
+    @Autowired
+    private ProductRepository productRepository;
+    
+    @Autowired
+    private OrderItemRepository orderItemRepository;
+    
+    @Autowired
+    private UserService userService;
+    
+    @Autowired
+    private AuthService authService;
+
+    @Transactional(readOnly = true)
+    public OrderDTO findById(Long id) {
+<span class="fc" id="L41">        Order order = repository.findById(id).orElseThrow(</span>
+<span class="fc" id="L42">                () -&gt; new ResourceNotFoundException(&quot;Recurso não encontrado&quot;));</span>
+<span class="fc" id="L43">        authService.validateSelfOrAdmin(order.getClient().getId());</span>
+<span class="fc" id="L44">        return new OrderDTO(order);</span>
+    }
+
+    @Transactional
+	public OrderDTO insert(OrderDTO dto) {
+		
+<span class="fc" id="L50">    	Order order = new Order();</span>
+    	
+<span class="fc" id="L52">    	order.setMoment(Instant.now());</span>
+<span class="fc" id="L53">    	order.setStatus(OrderStatus.WAITING_PAYMENT);</span>
+    	
+<span class="fc" id="L55">    	User user = userService.authenticated();</span>
+<span class="fc" id="L56">    	order.setClient(user);</span>
+    	
+<span class="fc bfc" id="L58" title="All 2 branches covered.">    	for (OrderItemDTO itemDto : dto.getItems()) {</span>
+<span class="fc" id="L59">    		Product product = productRepository.getReferenceById(itemDto.getProductId());</span>
+<span class="fc" id="L60">    		OrderItem item = new OrderItem(order, product, itemDto.getQuantity(), product.getPrice());</span>
+<span class="fc" id="L61">    		order.getItems().add(item);</span>
+    	}
+    	
+<span class="fc" id="L64">    	repository.save(order);</span>
+<span class="fc" id="L65">    	orderItemRepository.saveAll(order.getItems());</span>
+    	
+<span class="fc" id="L67">    	return new OrderDTO(order);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
